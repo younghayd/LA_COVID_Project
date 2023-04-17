@@ -5,6 +5,8 @@ require(ggplot2)
 require(bfsl)
 require(grob)
 require(ggiraph)
+require(ggbreak)
+library(plotly)
 
 setwd("H:/LA_flask_observations/Final_outputs/data/Indy_flask_data/")
 
@@ -27,44 +29,41 @@ rail_2011 <- 3.7
 total_2011 <- 11.1
 
 
-data <- data.frame(onroad = c("onroad", onroad_2011, onroad_2015), 
-                   offroad = c("offroad", offroad_2011, offroad_2015),
-                   res = c("res", res_2011, res_2015),
-                   com = c("com", com_2011, com_2015),
-                   ind = c("ind", ind_2011, ind_2015),
-                   air = c("air", air_2011, air_2015),
-                   rail = c("rail", rail_2011, rail_2015),
-                   total = c("total", total_2011, total_2015),
-                   year = c("year", 2011, 2015))
-
-data <- data.frame(sector = c("onroad", "onroad","offroad", "offroad", "res", "res", "com", "com", "ind", "ind",
-                            "air", "air", "rail", "rail", "total", "total"),
+data <- data.frame(sector = c("offroad", "offroad","onroad", "onroad","total", "total","air", "air", "rail", "rail", "res", "res", "com", "com", "ind", "ind"),
                      year = c(2011, 2015,2011, 2015,2011, 2015,2011, 2015,2011, 2015,2011, 2015,2011, 2015,2011, 2015),
-                     RCO = c(onroad_2011, onroad_2015, offroad_2011, offroad_2015, res_2011, res_2015, com_2011, com_2015,
-                             ind_2011, ind_2015, air_2011, air_2015, rail_2011, rail_2015, total_2011, total_2015))
+                     RCO = c(offroad_2011, offroad_2015, onroad_2011, onroad_2015,total_2011, total_2015, air_2011, air_2015, rail_2011, rail_2015, 
+                             res_2011, res_2015, com_2011, com_2015, ind_2011, ind_2015))
 
-plot <- ggplot() + theme_linedraw()
+cutinterval = c(15, 95)
 
-for(type in unique(data$sector)){
-  type_data <- filter(data, sector == type)
-  plot <- plot + geom_line(data = data, aes(x = year, y = RCO, colour = sector))
+plot <- plot_ly()
+
+offroad_data <- filter(data, sector == "offroad")
+main_data <- filter(data, sector != "offroad")
+
+
+for(type in unique(main_data$sector)){
+  type_data <- filter(main_data, sector == type)
+  plot <- add_trace(plot, x =~year, y = ~RCO, data = type_data, type = "scatter", mode = "markers+lines", name = type)
   
 }
 
+plot2 <- plot_ly(data = offroad_data)
+plot2 <- add_trace(plot2, x =~year, y = ~RCO, data = offroad_data, type = "scatter", mode = "markers+lines", name = "offroad") 
+ 
+fig <- subplot(plot2, plot,nrows = 2, shareX=TRUE, margin = 0.02)
 
-plot <- ggplot() + theme_linedraw() +
-  geom_line(data = data, aes(x=year, y=onroad, color = year)) +
-  geom_line(data = data, aes(x=year, y=offroad, color = year)) +
-  geom_line(data = data, aes(x=year, y=res, color = year)) +
-  geom_line(data = data, aes(x=year, y=com, color = year)) +
-  geom_line(data = data, aes(x=year, y=ind, color = year)) +
-  geom_line(data = data, aes(x=year, y=air, color = year)) +
-  geom_line(data = data, aes(x=year, y=rail, color = year)) +
-  geom_line(data = data, aes(x=year, y=total, color = year)) +
-  labs(y = "RCO", x = 'year', title = "RCO_time_series") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-yticks <- c(0, 5, 10, 15, 20, 90, 95, 100)
-
-plot <- plot + scale_y_continuous(breaks=trans(yticks))
+fig <- layout(fig, yaxis2 = list(range = c(0, cutinterval[1])),
+              plot_bgcolor = "#e5ecf6",
+              title = "LA flask RCO time series",
+             yaxis = list(range = c(cutinterval[2], 102),
+                          title = "RCO (ppb/ppm)"
+                          ),
+             xaxis = list(
+               tickvals = list(2011, 2015),
+               title = "Year"
+             )
+             
+             )
+fig 
 
